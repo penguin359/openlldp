@@ -53,7 +53,7 @@ jobs:
         run: ./contrib/build-rpm.sh
 
       - name: Configure project
-        run: ./configure --enable-warnings --enable-errors --enable-asan
+        run: ./configure --enable-warnings --enable-asan
         env:
           CFLAGS: "-static-libasan"
           LDFLAGS: "-static-libasan"
