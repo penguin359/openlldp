@@ -21,6 +21,7 @@ parse_cli.o: CFLAGS+=-U_FORTIFY_SOURCE -Wno-error
 ## system requires a shared libconfig
 AM_CFLAGS = $(LIBCONFIG_CFLAGS) $(LIBNL_CFLAGS) $(LIBNL_GENL_CFLAGS)
 AM_LDFLAGS = $(LIBCONFIG_LIBS) $(LIBNL_LIBS) $(LIBNL_GENL_LIBS) -lrt
+LDADD = $(LTLIBOBJS)
 
 ## header files to be installed, for programs using the client interface to lldpad 
 lldpad_includedir= ${includedir}/lldpad
@@ -86,14 +87,14 @@ liblldp_clif_includedir = ${srcdir}/include
 liblldp_clif_la_SOURCES = clif.c
 
 vdptool_SOURCES = vdptool.c lldp_util.c qbg/vdp22_clif.c vdptool_cisco_oui.c
-vdptool_LDADD = liblldp_clif.la
+vdptool_LDADD = liblldp_clif.la $(LTLIBOBJS)
 vdptool_LDFLAGS = -llldp_clif $(LIBNL_LIBS)
 
 dcbtool_SOURCES = dcbtool.c dcbtool_cmds.c parse_cli.l \
 	weak_readline.c lldp_rtnl.c lldp_util.c \
 	$(lldpad_include_HEADERS) $(noinst_HEADERS)
 
-dcbtool_LDADD = liblldp_clif.la
+dcbtool_LDADD = liblldp_clif.la $(LTLIBOBJS)
 dcbtool_LDFLAGS = -ldl -llldp_clif $(LIBNL_LIBS)
 
 lldptool_SOURCES = lldptool.c lldptool_cmds.c lldp_rtnl.c \
@@ -102,7 +103,7 @@ lldptool_SOURCES = lldptool.c lldptool_cmds.c lldp_rtnl.c \
 		   lldp_8021qaz_clif.c lldp_evb_clif.c qbg/vdp_clif.c \
 		   lldp_orgspec_clif.c lldp_cisco_clif.c lldp_evb22_clif.c \
 		   weak_readline.c $(lldpad_include_HEADERS) $(noinst_HEADERS)
-lldptool_LDADD = liblldp_clif.la
+lldptool_LDADD = liblldp_clif.la $(LTLIBOBJS)
 lldptool_LDFLAGS = -ldl -llldp_clif $(LIBNL_LIBS)
 
 if BUILD_DEBUG
