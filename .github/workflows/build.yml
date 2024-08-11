@@ -54,6 +54,8 @@ jobs:
 
       - name: Configure project
         run: ./configure --enable-warnings --enable-errors --enable-asan
+        env:
+          CFLAGS: "-static-libasan"
 
       - name: Build
         run: make
