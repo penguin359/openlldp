@@ -56,6 +56,7 @@ jobs:
         run: ./configure --enable-warnings --enable-errors --enable-asan
         env:
           CFLAGS: "-static-libasan"
+          LDFLAGS: "-static-libasan"
 
       - name: Build
         run: make
