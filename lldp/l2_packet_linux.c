@@ -45,7 +45,7 @@
 
 struct l2_packet_data {
 	int fd;
-	char ifname[IFNAMSIZ + 1];
+	char ifname[IFNAMSIZ];
 	int ifindex;
 	u8 perm_mac_addr[ETH_ALEN];
 	u8 curr_mac_addr[ETH_ALEN];
