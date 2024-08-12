@@ -31,7 +31,7 @@ jobs:
     - name: Send greeting
       run: echo "Hello ${{ inputs.name }}"
     - name: Install tools
-      run: apt-get install -yy groff
+      run: sudo apt-get install -yy groff
     - name: Build man pages
       run: "for doc in docs/*.[0-9]; do cat ${doc} | groff -mandoc -Thtml > docs/${doc}.html; done"
     - name: Upload docs
