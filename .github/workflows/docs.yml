@@ -29,9 +29,10 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - name: Send greeting
-      run: echo "Hello ${{ inputs.name }}"
+      run: echo "Hello ${{ inputs.name }} $(id) $(pwd)"
     - name: Install tools
       run: sudo apt-get install -yy groff
+    - uses: actions/checkout@v4
     - name: Build man pages
       run: "for doc in docs/*.[0-9]; do cat ${doc} | groff -mandoc -Thtml > ${doc}.html; done"
     - name: Upload docs
@@ -43,3 +44,5 @@ jobs:
       uses: actions/upload-pages-artifact@v3.0.1
       with:
         path: docs/
+    - name: Send goodbye
+      run: echo "Goodbye ${{ inputs.name }} $(id) $(pwd)"
