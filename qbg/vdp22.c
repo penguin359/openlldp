@@ -183,7 +183,7 @@ static void mgrid2str(struct vsi22 *p, char *buf, size_t len)
 			break;
 	}
 	if (print)
-		strncpy(buf, (char *)p->mgrid, len);
+		STRNCPY_TERMINATED(buf, (char *)p->mgrid, len);
 	else
 		vdp22_local2str(p->mgrid, buf, len);
 }
