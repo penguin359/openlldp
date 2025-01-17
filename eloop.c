@@ -222,7 +222,7 @@ static void eloop_sock_table_dispatch(struct eloop_sock_table *table,
 	table->changed = 0;
 	for (i = 0; i < table->count; i++) {
 		if (table->table[i].sock >= FD_SETSIZE) {
-			return;
+			continue;
 		}
 		if (FD_ISSET(table->table[i].sock, fds)) {
 			table->table[i].handler(table->table[i].sock,
