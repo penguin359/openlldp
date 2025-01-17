@@ -584,24 +584,6 @@ int eloop_terminated(void)
 }
 
 
-void eloop_wait_for_read_sock(int sock)
-{
-	fd_set rfds;
-
-	if (sock < 0)
-		return;
-
-	if (sock >= FD_SETSIZE) {
-		warn_too_many_fds();
-		return;
-	}
-
-	FD_ZERO(&rfds);
-	FD_SET(sock, &rfds);
-	select(sock + 1, &rfds, NULL, NULL, NULL);
-}
-
-
 void * eloop_get_user_data(void)
 {
 	return eloop.user_data;
