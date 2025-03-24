@@ -939,15 +939,13 @@ int get_mfs(const char *ifname)
 	return mfs;
 }
 
-int get_mac(const char *ifname, u8 mac[], bool perm_mac)
+int get_mac2(int s, const char *ifname, u8 mac[], bool perm_mac)
 {
-	int ret, s;
+	int ret;
 	struct nlmsghdr *nlh;
 	struct ifinfomsg *ifinfo;
 	struct nlattr *tb[IFLA_MAX+1],
 		*tb2[IFLA_INFO_MAX+1];
-
-	s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
 
 	if (s < 0) {
 		goto out;
@@ -1018,6 +1016,13 @@ out_free:
 out:
 	close(s);
 	return 0;
+}
+
+int get_mac(const char *ifname, u8 mac[], bool perm_mac)
+{
+	int s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
+
+	return get_mac2(s, ifname, mac, perm_mac);
 }
 
 u16 get_caps(const char *ifname)

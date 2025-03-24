@@ -29,6 +29,7 @@ ltmain.sh
 m4/
 missing
 test-driver
+test-netlink
 dcbtool
 lldpad
 lldptool
