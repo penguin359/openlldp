@@ -26,6 +26,7 @@ int __wrap_ioctl(int fd, unsigned long op, void *arg)
 int main()
 {
 	uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+	uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
 	//pthread_t sender_thread_id, receiver_thread_id;
@@ -33,6 +34,8 @@ int main()
 
 	struct ifinfomsg ifi;
 	struct nl_msg *msg = NULL;
+	struct nlattr *opts;
+	struct nlattr *opts2;
 
 	memset(&ifi, 0U, sizeof(ifi));
 	msg = nlmsg_alloc_simple(RTM_GETLINK, 0);
@@ -68,8 +71,36 @@ int main()
 	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
 	close(socket_pair[1]);
 
-	// TODO Implement nested netlink messages for next test
-	
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) == -1) {
+		perror("socketpair failed");
+		exit(EXIT_FAILURE);
+	}
+
+	if((opts = nla_nest_start(msg, IFLA_LINKINFO)) == NULL) {
+		fprintf(stderr, "nla_nest_start error\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if((opts2 = nla_nest_start(msg, IFLA_INFO_SLAVE_DATA)) == NULL) {
+		fprintf(stderr, "nla_nest_start error\n");
+		exit(EXIT_FAILURE);
+	}
+
+	struct nl_addr *addr2 = nl_addr_build(AF_LLC, dummy2_mac, sizeof(dummy2_mac));
+	nla_put_addr(msg, IFLA_BOND_SLAVE_PERM_HWADDR, addr2);
+	nl_addr_put(addr2);
+	nla_nest_end(msg, opts2);
+	nla_put_string(msg, IFLA_INFO_SLAVE_KIND, "bond");
+	nla_nest_end(msg, opts);
+
+	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
+
+	memset(result_mac, 0U, sizeof(result_mac));
+	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
+	assert(ret == 0);
+	assert(memcmp(result_mac, dummy2_mac, sizeof(result_mac)) == 0);
+	close(socket_pair[1]);
+
 	nlmsg_free(msg);
 	
 	printf("Test passed!\n");
