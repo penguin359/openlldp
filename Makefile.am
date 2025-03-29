@@ -1,7 +1,7 @@
 # target programs to be installed in ${sbindir}
 sbin_PROGRAMS = lldpad dcbtool lldptool vdptool
 
-check_PROGRAMS = lldp_clif_test
+check_PROGRAMS = lldp_clif_test netlink_test
 TESTS = $(check_PROGRAMS)
 
 # package nltest and vdptest, but do not install it anywhere
@@ -150,6 +150,9 @@ AM_DISTCHECK_CONFIGURE_FLAGS = --enable-debug
 lldp_clif_test_SOURCES = test/lldp_clif_test.c lldp_basman_clif.c lldp_util.c \
 	lldp_rtnl.c
 lldp_clif_test_LDFLAGS = -lrt $(LIBNL_LIBS)
+
+netlink_test_SOURCES = test/netlink_test.c lldp_util.c lldp_rtnl.c
+netlink_test_LDFLAGS = -lrt $(LIBNL_LIBS) -Wl,--wrap=ioctl
 
 RPMBUILD_TOP = $(abs_top_builddir)/rpm/rpmbuild
 RPMBUILD_OPT ?= --without check
