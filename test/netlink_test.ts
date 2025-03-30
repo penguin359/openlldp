@@ -9,8 +9,6 @@
 
 #include <netlink/msg.h>
 
-#include <check.h>
-
 #include <lldp_util.h>
 
 extern int get_mac2(int s, const char *ifname, u8 mac[], bool perm_mac);
@@ -77,8 +75,11 @@ out_err:
 static const uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
 static const uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
-START_TEST(test_basic_get_mac)
-{
+#suite Netlink
+
+#tcase Get MAC
+
+#test test_basic_get_mac
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
 	int ret;
@@ -106,11 +107,8 @@ START_TEST(test_basic_get_mac)
 	ck_assert_mem_eq(dummy_mac, result_mac, sizeof(result_mac));
 
 	nlmsg_free(msg);
-}
-END_TEST
 
-START_TEST(test_ext_get_mac)
-{
+#test test_ext_get_mac
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
 	int ret;
@@ -136,11 +134,8 @@ START_TEST(test_ext_get_mac)
 	ck_assert_mem_eq(dummy_mac, result_mac, sizeof(result_mac));
 
 	nlmsg_free(msg);
-}
-END_TEST
 
-START_TEST(test_bond_get_mac)
-{
+#test test_bond_get_mac
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
 	int ret;
@@ -166,37 +161,3 @@ START_TEST(test_bond_get_mac)
 	ck_assert_mem_eq(dummy2_mac, result_mac, sizeof(result_mac));
 
 	nlmsg_free(msg);
-}
-END_TEST
-
-Suite *netlink_suite(void)
-{
-	Suite *s;
-	TCase *tc_get_mac;
-
-	s = suite_create("Netlink");
-
-	tc_get_mac = tcase_create("Get MAC");
-
-	tcase_add_test(tc_get_mac, test_basic_get_mac);
-	tcase_add_test(tc_get_mac, test_ext_get_mac);
-	tcase_add_test(tc_get_mac, test_bond_get_mac);
-	suite_add_tcase(s, tc_get_mac);
-
-	return s;
-}
-
-int main()
-{
-	int number_failed;
-	Suite *s;
-	SRunner *sr;
-
-	s = netlink_suite();
-	sr = srunner_create(s);
-
-	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
-	srunner_free(sr);
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-}

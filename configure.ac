@@ -77,7 +77,8 @@ AC_SUBST(LIBNL_GENL_LIBS)
 AC_CHECK_LIB(nl3, rtnl_link_get_by_name)
 
 PKG_CHECK_MODULES([CHECK], [check >= 0.8.2], [with_check_tests=yes], [with_check_tests=no])
-AM_CONDITIONAL(HAVE_CHECK, test x$with_check_tests = xyes)
+AC_CHECK_PROG([HAVE_CHECKMK], [checkmk], [yes])
+AM_CONDITIONAL(HAVE_CHECK, test x$HAVE_CHECKMK = xyes -a x$with_check_tests = xyes)
 
 AC_CHECK_FUNCS([alarm])
 AC_CHECK_FUNCS([gettimeofday])

@@ -153,9 +153,15 @@ lldp_clif_test_LDFLAGS = -lrt $(LIBNL_LIBS)
 
 if HAVE_CHECK
     check_PROGRAMS += netlink_test
-    netlink_test_SOURCES = test/netlink_test.c lldp_util.c lldp_rtnl.c
+    dist_netlink_test_SOURCES = lldp_util.c lldp_rtnl.c
+    nodist_netlink_test_SOURCES = test/netlink_test.c
     netlink_test_CFLAGS = $(AM_CFLAGS) @CHECK_CFLAGS@
     netlink_test_LDFLAGS = -lrt $(LIBNL_LIBS) -Wl,--wrap=ioctl @CHECK_LIBS@
+
+    CLEANFILES = test/netlink_test.c
+
+.ts.c:
+	checkmk $^ > $@
 endif
 
 RPMBUILD_TOP = $(abs_top_builddir)/rpm/rpmbuild
