@@ -23,7 +23,7 @@ int __wrap_ioctl(int fd, unsigned long op, void *arg)
 	return 0;
 }
 
-struct nl_msg *build_getlink_msg(uint8_t mac[6], char *kind, uint8_t slave_mac[6])
+struct nl_msg *build_getlink_msg(const uint8_t mac[6], const char *kind, const uint8_t slave_mac[6])
 {
 	struct nl_msg *msg = NULL;
 	struct ifinfomsg ifi;
@@ -76,11 +76,10 @@ out_err:
 static const uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
 static const uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
-int main()
+void test_basic_get_mac(void)
 {
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
-	//pthread_t sender_thread_id, receiver_thread_id;
 	int ret;
 
 	struct nl_msg *msg = NULL;
@@ -88,54 +87,92 @@ int main()
 	msg = build_getlink_msg(dummy_mac, NULL, NULL);
 	assert(msg != NULL);
 
-	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) == -1) {
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
 		perror("socketpair failed");
 		exit(EXIT_FAILURE);
 	}
 
-	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
+	if(send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0) < 0) {
+		perror("send() failed");
+		exit(EXIT_FAILURE);
+	}
 
 	//printf("Before: %02x:%02x:%02x:%02x:%02x:%02x\n", result_mac[0], result_mac[1], result_mac[2], result_mac[3], result_mac[4], result_mac[5]);
-	memset(result_mac, 0U, sizeof(result_mac));
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, false);
+	close(socket_pair[1]);
 	//printf("After: %02x:%02x:%02x:%02x:%02x:%02x\n", result_mac[0], result_mac[1], result_mac[2], result_mac[3], result_mac[4], result_mac[5]);
 	assert(ret == 0);
 	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
-	close(socket_pair[1]);
-
-	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) == -1) {
-		perror("socketpair failed");
-		exit(EXIT_FAILURE);
-	}
-
-	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
 
 	nlmsg_free(msg);
-	
-	memset(result_mac, 0U, sizeof(result_mac));
-	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
-	assert(ret == 0);
-	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
-	close(socket_pair[1]);
+}
 
-	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) == -1) {
+void test_ext_get_mac(void)
+{
+	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	int socket_pair[2];
+	int ret;
+
+	struct nl_msg *msg = NULL;
+
+	msg = build_getlink_msg(dummy_mac, NULL, NULL);
+	assert(msg != NULL);
+
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
 		perror("socketpair failed");
 		exit(EXIT_FAILURE);
 	}
+
+	if(send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0) < 0) {
+		perror("send() failed");
+		exit(EXIT_FAILURE);
+	}
+
+	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
+	close(socket_pair[1]);
+	assert(ret == 0);
+	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
+
+	nlmsg_free(msg);
+}
+
+void test_bond_get_mac(void)
+{
+	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	int socket_pair[2];
+	int ret;
+
+	struct nl_msg *msg = NULL;
 
 	msg = build_getlink_msg(dummy_mac, "bond", dummy2_mac);
 	assert(msg != NULL);
 
-	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
+		perror("socketpair failed");
+		exit(EXIT_FAILURE);
+	}
 
-	memset(result_mac, 0U, sizeof(result_mac));
+	if(send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0) < 0) {
+		perror("send() failed");
+		exit(EXIT_FAILURE);
+	}
+
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
+	close(socket_pair[1]);
 	assert(ret == 0);
 	assert(memcmp(result_mac, dummy2_mac, sizeof(result_mac)) == 0);
-	close(socket_pair[1]);
 
 	nlmsg_free(msg);
-	
+}
+
+int main()
+{
+	//pthread_t sender_thread_id, receiver_thread_id;
+
+	test_basic_get_mac();
+	test_ext_get_mac();
+	test_bond_get_mac();
+
 	printf("Test passed!\n");
 
 	return 0;
