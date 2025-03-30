@@ -76,6 +76,9 @@ AC_SUBST(LIBNL_GENL_LIBS)
 
 AC_CHECK_LIB(nl3, rtnl_link_get_by_name)
 
+AM_PATH_CHECK
+dnl PKG_CHECK_MODULES([CHECK], [check >= 0.8.2])
+
 AC_CHECK_FUNCS([alarm])
 AC_CHECK_FUNCS([gettimeofday])
 AC_CHECK_FUNCS([inet_ntop])
