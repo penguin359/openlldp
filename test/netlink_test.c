@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +9,8 @@
 
 #include <netlink/msg.h>
 
+#include "unity.h"
+
 #include <lldp_util.h>
 
 extern int get_mac2(int s, const char *ifname, u8 mac[], bool perm_mac);
@@ -18,7 +19,7 @@ extern int get_mac2(int s, const char *ifname, u8 mac[], bool perm_mac);
 int __wrap_ioctl(int fd, unsigned long op, void *arg)
 {
 	fprintf(stderr, "ioctl(%d, %lu, %p)\n", fd, op, arg);
-	assert(op == SIOCGIFINDEX);
+	TEST_ASSERT_EQUAL_INT(SIOCGIFINDEX, op);
 
 	return 0;
 }
@@ -37,7 +38,7 @@ struct nl_msg *build_getlink_msg(const uint8_t mac[6], const char *kind, const u
 	if(nlmsg_append(msg, &ifi, sizeof(ifi), NLMSG_ALIGNTO) != 0)
 		goto out_err;
 	NLA_PUT_STRING(msg, IFLA_IFNAME, "eth0");
-	//assert(sizeof(mac) == 6);
+	//TEST_ASSERT_EQUAL_INT(6, sizeof(mac));
 	//NLA_PUT(msg, IFLA_ADDRESS, sizeof(mac), mac);
 	if((addr = nl_addr_build(AF_LLC, mac, 6)) == NULL)
 		goto out_err;
@@ -76,6 +77,14 @@ out_err:
 static const uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
 static const uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
+void setUp(void)
+{
+}
+
+void tearDown(void)
+{
+}
+
 void test_basic_get_mac(void)
 {
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -85,7 +94,7 @@ void test_basic_get_mac(void)
 	struct nl_msg *msg = NULL;
 
 	msg = build_getlink_msg(dummy_mac, NULL, NULL);
-	assert(msg != NULL);
+	TEST_ASSERT_NOT_NULL(msg);
 
 	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
 		perror("socketpair failed");
@@ -101,8 +110,8 @@ void test_basic_get_mac(void)
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, false);
 	close(socket_pair[1]);
 	//printf("After: %02x:%02x:%02x:%02x:%02x:%02x\n", result_mac[0], result_mac[1], result_mac[2], result_mac[3], result_mac[4], result_mac[5]);
-	assert(ret == 0);
-	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
+	TEST_ASSERT_EQUAL_INT(0, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY_MESSAGE(dummy_mac, result_mac, sizeof(result_mac), "Result MAC is unexpected");
 
 	nlmsg_free(msg);
 }
@@ -116,7 +125,7 @@ void test_ext_get_mac(void)
 	struct nl_msg *msg = NULL;
 
 	msg = build_getlink_msg(dummy_mac, NULL, NULL);
-	assert(msg != NULL);
+	TEST_ASSERT_NOT_NULL(msg);
 
 	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
 		perror("socketpair failed");
@@ -130,8 +139,8 @@ void test_ext_get_mac(void)
 
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
 	close(socket_pair[1]);
-	assert(ret == 0);
-	assert(memcmp(result_mac, dummy_mac, sizeof(result_mac)) == 0);
+	TEST_ASSERT_EQUAL_INT(0, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY_MESSAGE(dummy_mac, result_mac, sizeof(result_mac), "Result MAC is unexpected");
 
 	nlmsg_free(msg);
 }
@@ -145,7 +154,7 @@ void test_bond_get_mac(void)
 	struct nl_msg *msg = NULL;
 
 	msg = build_getlink_msg(dummy_mac, "bond", dummy2_mac);
-	assert(msg != NULL);
+	TEST_ASSERT_NOT_NULL(msg);
 
 	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) < 0) {
 		perror("socketpair failed");
@@ -159,21 +168,8 @@ void test_bond_get_mac(void)
 
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
 	close(socket_pair[1]);
-	assert(ret == 0);
-	assert(memcmp(result_mac, dummy2_mac, sizeof(result_mac)) == 0);
+	TEST_ASSERT_EQUAL_INT(0, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY_MESSAGE(dummy2_mac, result_mac, sizeof(result_mac), "Result MAC is unexpected");
 
 	nlmsg_free(msg);
-}
-
-int main()
-{
-	//pthread_t sender_thread_id, receiver_thread_id;
-
-	test_basic_get_mac();
-	test_ext_get_mac();
-	test_bond_get_mac();
-
-	printf("Test passed!\n");
-
-	return 0;
 }

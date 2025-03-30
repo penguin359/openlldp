@@ -151,7 +151,8 @@ lldp_clif_test_SOURCES = test/lldp_clif_test.c lldp_basman_clif.c lldp_util.c \
 	lldp_rtnl.c
 lldp_clif_test_LDFLAGS = -lrt $(LIBNL_LIBS)
 
-netlink_test_SOURCES = test/netlink_test.c lldp_util.c lldp_rtnl.c
+netlink_test_SOURCES = test/netlink_test.c test/netlink_test_runner.c test/unity.c \
+		       lldp_util.c lldp_rtnl.c test/unity.h test/unity_internals.h
 netlink_test_LDFLAGS = -lrt $(LIBNL_LIBS) -Wl,--wrap=ioctl
 
 RPMBUILD_TOP = $(abs_top_builddir)/rpm/rpmbuild
