@@ -29,7 +29,6 @@ ltmain.sh
 m4/
 missing
 test-driver
-*_test
 dcbtool
 lldpad
 lldptool
@@ -40,3 +39,8 @@ qbg22sim
 patches/
 tags
 ar-lib
+
+# Ignore autotest files
+*.log
+*.trs
+*_test

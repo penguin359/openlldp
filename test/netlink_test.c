@@ -23,25 +23,70 @@ int __wrap_ioctl(int fd, unsigned long op, void *arg)
 	return 0;
 }
 
+struct nl_msg *build_getlink_msg(uint8_t mac[6], char *kind, uint8_t slave_mac[6])
+{
+	struct nl_msg *msg = NULL;
+	struct ifinfomsg ifi;
+	struct nlattr *opts;
+	struct nlattr *opts2;
+	struct nl_addr *addr = NULL;
+
+	memset(&ifi, 0U, sizeof(ifi));
+	if((msg = nlmsg_alloc_simple(RTM_GETLINK, 0)) == NULL)
+		goto out_err;
+	if(nlmsg_append(msg, &ifi, sizeof(ifi), NLMSG_ALIGNTO) != 0)
+		goto out_err;
+	NLA_PUT_STRING(msg, IFLA_IFNAME, "eth0");
+	//assert(sizeof(mac) == 6);
+	//NLA_PUT(msg, IFLA_ADDRESS, sizeof(mac), mac);
+	if((addr = nl_addr_build(AF_LLC, mac, 6)) == NULL)
+		goto out_err;
+	NLA_PUT_ADDR(msg, IFLA_ADDRESS, addr);
+	nl_addr_put(addr);
+	addr = NULL;
+
+	if(kind || slave_mac) {
+		if((opts = nla_nest_start(msg, IFLA_LINKINFO)) == NULL)
+			goto out_err;
+
+		if((opts2 = nla_nest_start(msg, IFLA_INFO_SLAVE_DATA)) == NULL)
+			goto out_err;
+
+		if((addr = nl_addr_build(AF_LLC, slave_mac, 6)) == NULL)
+			goto out_err;
+		NLA_PUT_ADDR(msg, IFLA_BOND_SLAVE_PERM_HWADDR, addr);
+		nl_addr_put(addr);
+		addr = NULL;
+		nla_nest_end(msg, opts2);
+		if(kind)
+			NLA_PUT_STRING(msg, IFLA_INFO_SLAVE_KIND, kind);
+		nla_nest_end(msg, opts);
+	}
+
+	return msg;
+
+nla_put_failure:
+out_err:
+	nl_addr_put(addr);
+	nlmsg_free(msg);
+
+	return NULL;
+}
+
+static const uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+static const uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+
 int main()
 {
-	uint8_t dummy_mac[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
-	uint8_t dummy2_mac[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 	uint8_t result_mac[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int socket_pair[2];
 	//pthread_t sender_thread_id, receiver_thread_id;
 	int ret;
 
-	struct ifinfomsg ifi;
 	struct nl_msg *msg = NULL;
-	struct nlattr *opts;
-	struct nlattr *opts2;
 
-	memset(&ifi, 0U, sizeof(ifi));
-	msg = nlmsg_alloc_simple(RTM_GETLINK, 0);
-	nlmsg_append(msg, &ifi, sizeof(ifi), NLMSG_ALIGNTO);
-	nla_put_string(msg, IFLA_IFNAME, "eth0");
-	nla_put(msg, IFLA_ADDRESS, sizeof(dummy_mac), dummy_mac);
+	msg = build_getlink_msg(dummy_mac, NULL, NULL);
+	assert(msg != NULL);
 
 	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, socket_pair) == -1) {
 		perror("socketpair failed");
@@ -65,6 +110,8 @@ int main()
 
 	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
 
+	nlmsg_free(msg);
+	
 	memset(result_mac, 0U, sizeof(result_mac));
 	ret = get_mac2(socket_pair[0], "eth0", result_mac, true);
 	assert(ret == 0);
@@ -76,22 +123,8 @@ int main()
 		exit(EXIT_FAILURE);
 	}
 
-	if((opts = nla_nest_start(msg, IFLA_LINKINFO)) == NULL) {
-		fprintf(stderr, "nla_nest_start error\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if((opts2 = nla_nest_start(msg, IFLA_INFO_SLAVE_DATA)) == NULL) {
-		fprintf(stderr, "nla_nest_start error\n");
-		exit(EXIT_FAILURE);
-	}
-
-	struct nl_addr *addr2 = nl_addr_build(AF_LLC, dummy2_mac, sizeof(dummy2_mac));
-	nla_put_addr(msg, IFLA_BOND_SLAVE_PERM_HWADDR, addr2);
-	nl_addr_put(addr2);
-	nla_nest_end(msg, opts2);
-	nla_put_string(msg, IFLA_INFO_SLAVE_KIND, "bond");
-	nla_nest_end(msg, opts);
+	msg = build_getlink_msg(dummy_mac, "bond", dummy2_mac);
+	assert(msg != NULL);
 
 	send(socket_pair[1], nlmsg_hdr(msg), nlmsg_hdr(msg)->nlmsg_len, 0);
 
