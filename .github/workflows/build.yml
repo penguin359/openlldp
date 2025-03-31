@@ -39,7 +39,7 @@ jobs:
         run: >
           sudo apt-get install -y
           libconfig-dev libnl-3-dev libnl-genl-3-dev
-          linux-libc-dev rpm libreadline-dev
+          linux-libc-dev rpm libreadline-dev check
 
       - name: Set up GCC
         uses: egor-tensin/setup-gcc@v1
